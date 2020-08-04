@@ -10,6 +10,8 @@ import glob
 import os
 import json
 
+pos = ["passed", "success", "available", "preparing", "charging", "sysvarh(-)"]
+neg = ["failed", "faulted", "fault", "autoretry", "bad", "panic"]
 
 #---------------------------------------------------------------------------
 def fix_name(name):
@@ -26,48 +28,52 @@ def clean_list(list_of_lines):
     """ Remove any of the entries that are not needed in the list of lines from the test-response. """
     junk = ["STF>", ""]
     list_of_lines = list(filter(lambda x: x not in junk, list_of_lines))
+    list_of_lines = [line.replace("STF>", "") for line in list_of_lines]
 
     return list_of_lines
 
 
-# #---------------------------------------------------------------------------
-# def split_results_after(a_string, a_file):
-#     """ Saves a line specified by "a_string" and all following lines until the next occurrence of "a_string". """
-#     big_string = ""
-#     collect = False
-#     start_sec = False
-#     tests = {}
-#     list_of_lines = []
+#---------------------------------------------------------------------------
+def bold_print(a_string):
+    print("---------------------------------------------------")
+    print(a_string)
+    print("---------------------------------------------------\n")
 
-#     i = 0
-#     for line in a_file:
-#         # initial case of crossing "a_string" or the beginning version info..
-#         if collect==False and ((a_string in line.lower()) or ("power on" in line.lower())):
-#             big_string += line
-#             collect = True
-#             start_sec = True
+def sharp_print(a_string):
+    print("____________________________________________________")
+    print(a_string, end="")
+    print("____________________________________________________\n")
 
-#         # save all lines following "a_string" ..
-#         elif collect and ((a_string not in line.lower()) and ("power on" not in line.lower())):
-#             big_string += line
-#             # for line in list_of_lines:
-#                 # print(line)
-#             # print("-------------------------------")
+def hint_print(line):
+    n_line = line.lower().replace("stf>", "")
+    for x in pos:
+        if (x in n_line) and ("sysvar" not in x):
+            print("(+) ", line)
+    for y in neg:
+        if y in n_line:
+            print("(-) ", line)
 
-#         # stop collecting lines for that test and restart..
-#         elif collect and (a_string in line.lower()):
-#             collect = False
-#             i +=1
-#             list_of_lines = big_string.split("\n")
-#             tests["Test_"+str(i)] = clean_list(list_of_lines)
-#             big_string = ""
-#             list_of_lines = []
 
-#         else: 
-#             print(list_of_lines)
-#             pass
+#---------------------------------------------------------------------------
+def get_test_status(list_of_lines):
+    first_line = list_of_lines[0].lower()
+    last_line  = list_of_lines[-1].lower()
+    second_to_last = list_of_lines[-2].lower()
 
-#     return tests
+    #check last line of every test-grouping first
+    for word in neg:
+        if (word in last_line) or (word in second_to_last):
+            return {"failed" : list_of_lines}
+    for word in pos:
+        if ("phase" in first_line):
+            return {"failed" : list_of_lines}
+        if (word in last_line):
+            return {"passed" : list_of_lines}
+        # else:
+        #     print(word, last_line, first_line)
+        #     return {"failed" : list_of_lines}
+    else:
+        return {"error":"test didn't pass or fail"}
 
 
 #---------------------------------------------------------------------------
@@ -75,51 +81,80 @@ def split_results_after(a_string, a_file):
     """ Saves a line specified by "a_string" and all following lines until the next occurrence of "a_string". """
     big_string = ""
     collect = False
-    start_sec = False
     tests = {}
     list_of_lines = []
+    outcomes = ["passed", "success", "failed", "faulted", "fault"]
+    is_On = False
+    set = False
+    prev = ""
 
     i = 0
     for line in a_file:
-        # initial case of crossing "a_string" or the beginning version info..
-        if collect==False and ((a_string in line.lower()) or ("power on" in line.lower())):
-            big_string += line
-            collect = True
-            start_sec = True
+        # n_line: normalized line (lower case and without extra things)
+        n_line = line.lower().replace("stf>", "")
+        line = line.replace("STF>", "")
+        if "versichargesg" in n_line:
+            bold_print(line.replace("** Diagnostics - ", ""))
+        if "version match" in n_line:
+            continue
 
-        # save all lines following "a_string" ..
-        elif collect and ((a_string not in line.lower()) and ("power on" not in line.lower())):
-            big_string += line
-            # for line in list_of_lines:
-                # print(line)
-            # print("-------------------------------")
+        
 
-        # stop collecting lines for that test and restart..
-        elif collect and (a_string in line.lower()):
-            collect = False
-            i +=1
-            list_of_lines = big_string.split("\n")
-            # tests["Test_"+str(i)] = clean_list(list_of_lines)
-            print(clean_list(list_of_lines))
+        #collect all the lines after "a_string" or the "power on"
+        if collect and (a_string not in n_line):
+            big_string += line
+
+        elif (a_string in n_line) or ("power on" in n_line):
+            if len(big_string):
+                big_string += line
+                list_of_lines = clean_list(big_string.split("\n"))
+                tests["Test_"+str(i)] = get_test_status(list_of_lines)
+                set = True
+
             big_string = ""
-            list_of_lines = []
+            collect = True
+            i += 1
 
-        else: 
+        else:
             pass
+        
 
+
+        if "power on" in n_line:
+            sharp_print(line)
+            is_On = True
+        elif is_On:
+            if prev != "Test_"+str(i):
+                bold_print("Test_"+str(i))
+            prev = "Test_"+str(i)
+            hint_print(line)
+        else:
+            continue
+
+
+
+    if len(big_string):
+        big_string += line
+        list_of_lines = clean_list(big_string.split("\n"))
+        tests["Test_"+str(i)] = get_test_status(list_of_lines)
+        set = True
+    if is_On:
+        for x in outcomes:
+            if x in n_line:
+                if prev != "Test_"+str(i):
+                    bold_print("Test_"+str(i))
+                    prev = "Test_"+str(i)
+                    print("", line)
     return tests
 
 
 #---------------------------------------------------------------------------
-def check_test_results(file_path):
+def check_file_output(file_path):
     """ Opens a file at "file_path" and reads the results in a section specified by a string, then returns the results found in that file. """
     f = open(file_path, "r")
-    results = split_results_after("relay close", f)
+    results = split_results_after("sysvarh(-)", f)
 
-    
     f.close()
-    # print(results)
-    # return
 
     return results
 
@@ -164,8 +199,7 @@ def get_file_tree():
                 continue
 
             if (os.path.isfile(file_path)):
-                # print(f)
-                file_tests[file_path] = check_test_results(file_path)
+                file_tests[file_path] = check_file_output(file_path)
                 file_list.append(file_tests)
                 file_tests = {}
             break #TK - Just test on one file to start
@@ -185,16 +219,16 @@ def get_file_tree():
 def dict_to_JSON(a_dict):
     """Takes a dict, sorts it and formats it like a JSON. Then, it prints it out in the console and sends the same
     result to a new JSON file in the directory that this tool is run, unless --noJSON is specified as an argument."""
-    print("-------------------------------------------------------------------------")
-    print("{\n\tDirectory_name: [")
-    print("\t\tFile_name: {")
-    print("\t\t\tTest:    {")
-    print("\t\t\t\tResults ")
-    print("\t\t\t\t }")
-    print("\t\t\t} ")
-    print("\t\t]")
-    print("} ")
-    print("-------------------------------------------------------------------------")
+    # print("-------------------------------------------------------------------------")
+    # print("{\n\tDirectory_name: [")
+    # print("\t\tFile_name: {")
+    # print("\t\t\tTest:    {")
+    # print("\t\t\t\tResults ")
+    # print("\t\t\t\t }")
+    # print("\t\t\t} ")
+    # print("\t\t]")
+    # print("} ")
+    # print("-------------------------------------------------------------------------")
 
     formatted_json_log_results = json.dumps(a_dict, indent = 8, sort_keys=True)
     print(formatted_json_log_results)
