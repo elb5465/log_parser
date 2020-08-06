@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <meta charset="UTF-8">
+    <script defer src="./renderer.js"></script>
+    <title>Siemens Log Parsing Tool</title>
+    <style>
+        /* SIEMENS Colors From Style Guide
+            teal dark = 00646E
+            Stone light = #becdd7
+            White = #FFFFFF 
+            
+        */
+        html{
+            background-color: white;
+            margin-left: 20px;
+            margin-right: 20px;
+        }
+        div {
+            border-radius: 5px;
+            background-color: white;
+            padding: 5px;
+        }
+        label {
+            color: black;
+            font-size:medium;
+        }       
+        input[type=button] {
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            background-color: #009999;
+            border: 2px solid #009999;
+            color: #FFFFFF;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+            width: 200px;
+            font-size: medium;
+
+        }
+        input[type="submit"]{
+            /* margin-left: 20%; */
+            margin-top: 15px;
+            text-align: center;
+            border-radius: 5px;
+            padding: 10px;
+            border: 2px solid #009999;
+            box-shadow: 0 3px 5px rgba(0, 0, 0, 0.3);
+            width: 200px;
+            font-size: medium;
+        }
+        input[type=button]:hover, input[type=submit]:hover, #Send:hover, #innerBtn2:hover {
+            background-color: #00646E; 
+            color: #FFFFFF;
+        }
+        input[type=text], input[type=password] {
+            border-radius: 5px;
+            padding: 10px;
+            width: 40%;
+            background-color: white;
+            color: black;
+            margin-left: 78px;
+            font-size: small;
+            border-width: thin;
+            border-color: #becdd7;
+            border-top-color: rgb(99, 97, 97);
+            border-left-color: rgb(66, 64, 64);
+        }
+        #hdr{
+            /* background-color: #becdd7; */
+            color: black;
+            font-size: medium;
+            border-radius: 5px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        #filePath{
+            border-radius: 5px;
+            line-height: 1;
+            width: 60%;
+            margin-left: 10px;
+            font-size: small;
+            word-wrap: break-word;
+            word-break: break-all;
+            resize: none;
+            vertical-align:top;
+            padding: 4px;
+            border-color: #becdd7;
+            border-top-color: rgb(99, 97, 97);
+            border-left-color: rgb(66, 64, 64);
+        }        
+        #innerBtn, #innerBtn2 {
+            padding: 5px;
+            width: 175px;
+            text-align: center;
+            /* height: 10%;         */
+        }
+        #innerBtn2, #filePath, #results{
+            background-color: white;
+        }
+        #selectfilebtn{
+            border-radius: 5px;
+            margin-left: 5px;
+            margin-bottom: 0px;
+            padding: 5px;
+            width: 125px;
+        }
+        .results{
+            width: 95%;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            font-family: Arial, Helvetica, sans-serif;
+            resize: none;
+            font-size: small;
+            padding: 10px;
+        }
+        #Send{
+            width: 75px;
+            margin-left: 15px;
+            background-color: white;
+            color: black;
+            padding: 8px;
+        } 
+    </style>
+</head>
+
+<body>
+
+    <div>    
+            <h4>
+                <label class="label" id="hdr" >Select Log File to Parse:  
+
+                <textarea id="filePath" rows="2" value="None Selected" disabled name="file"></textarea>
+                <pre><pre></pre></pre>
+                <input id="selectfilebtn" type="button" value="Select File" onclick="selectFile()">
+                </label>
+            </h4>
+        
+
+            <hr style="border: 0.5px solid#BECDD7;" />
+            <br>
+            <div>
+                <input class="innerBtn" id="innerBtn" type="button" value="Start Log-Parsing" onclick="call_PyScript()">
+                <!-- <br>
+                <br> -->
+                <br>
+                <input class="innerBtn2" id="innerBtn2" type="submit" value="Clear Selections" onclick="clearSelections()">
+            </div>
+            <br>
+
+
+        <!------------- INFORMATION BOX FOR RESPONSES AND ERRORS -------------->
+        <hr style="border: 0.5px solid#becdd7;" />
+        <div>
+            <br>
+            <h4 id="hdr"> <label for="results">Information: </label> </h4>
+            <textarea id="results" class="results" disabled name="results" rows="6" cols="100"></textarea>
+        </div>
+        <!--------------------------------------------------------------------->
+    </div> <!-- end container div of whole app -->
+</body>
+</html>
