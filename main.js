@@ -14,8 +14,8 @@ let mainWindow
 function createWindow() {
     // Create the browser window.
     mainWindow = new BrowserWindow({
-        width: 615,
-        height: 800,
+        width: 800,
+        height: 900,
         webPreferences: {
             nodeIntegration: true,
             preload: path.join(__dirname, 'preload.js')
