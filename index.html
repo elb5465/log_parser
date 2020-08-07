@@ -4,6 +4,7 @@
 <head>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <script defer src="./renderer.js"></script>
     <title>Siemens Log Parsing Tool</title>
     <style>
@@ -26,6 +27,7 @@
         label {
             color: black;
             font-size:medium;
+            
         }       
         input[type=button] {
             text-align: center;
@@ -72,7 +74,6 @@
             color: black;
             font-size: medium;
             border-radius: 5px;
-            font-family: Arial, Helvetica, sans-serif;
         }
         #filePath{
             border-radius: 5px;
@@ -88,6 +89,7 @@
             border-color: #becdd7;
             border-top-color: rgb(99, 97, 97);
             border-left-color: rgb(66, 64, 64);
+            max-width: 45%;
         }        
         #innerBtn, #innerBtn2 {
             padding: 5px;
@@ -105,12 +107,12 @@
             padding: 5px;
             width: 125px;
         }
-        .results{
+        .results, .json_results{
             width: 95%;
             border: 1px solid #ccc;
+            background-color: white;
             border-radius: 10px;
             font-family: Arial, Helvetica, sans-serif;
-            resize: none;
             font-size: small;
             padding: 10px;
         }
@@ -121,26 +123,98 @@
             color: black;
             padding: 8px;
         } 
+        .tab {
+            overflow: hidden;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            background-color: #f1f1f1;
+        }
+        /* Style the buttons inside the tab */
+        .tab button {
+            background-color: inherit;
+            float: left;
+            border: none;
+            outline: none;
+            cursor: pointer;
+            padding: 14px 16px;
+            transition: 0.3s;
+            font-size: 17px;
+            width: 25%;
+        }
+        
+        /* Change background color of buttons on hover */
+        .tab button:hover {
+            background-color: #ddd;
+            border-radius: 5px;
+        }
+        
+        /* Create an active/current tablink class */
+        .tab button.active {
+            background-color: #009999;
+            color: white;
+            border-radius: 5px;
+        }
+        
+        /* Style the tab content */
+        .tabcontent {
+            display: none;
+            padding: 6px 12px;
+            border: 1px solid #ccc;
+            border-top: none;
+            resize: both;
+        }
+        .contents, input[type="textarea"] {
+            background-color: inherit;
+            width: 100%;
+            border-color: transparent;
+            resize: both;
+            color: black;
+        }
+          
     </style>
 </head>
 
 <body>
 
     <div>    
+        <div>
             <h4>
-                <label class="label" id="hdr" >Select Log File to Parse:  
-
-                <textarea id="filePath" rows="2" value="None Selected" disabled name="file"></textarea>
-                <pre><pre></pre></pre>
-                <input id="selectfilebtn" type="button" value="Select File" onclick="selectFile()">
-                </label>
+                <label for="filePath">Select Log File to Parse: </label>
             </h4>
+
+        </div>
+
+        <input id="selectfilebtn" type="button" value="Select File" onclick="selectFile()">
+        <textarea id="filePath" rows="2" value="None Selected" disabled name="file"></textarea>
+<pre></pre>
+        <br>
+
+
+        <!------------- Functionality to Output a JSON File -------------->
+        <hr style="border: 0.5px solid#becdd7;" />
+
+        <div>
+            <h4> 
+                <label for="checkbox">Create JSON of Results? </label> 
+                <input type="checkbox" id="checkbox" name="JSON" onclick="createJSON()">
+            </h4>
+        </div>
+
+        <!-- <hr id="border" style="border: 0.5px solid#BECDD7;display:none" /> -->
+        
+        <!-- <div id="json_div" style="display:none"> -->
+            <!-- <h4>
+                <h6>Full output details will be sent to JSON file.</h6>
+                <textarea disabled id="json_results" class="json_results" name="json_results" rows="10" cols="100"></textarea>
+            </h4> -->
+        <!-- </div> -->
+        <!--------------------------------------------------------------------->
         
 
             <hr style="border: 0.5px solid#BECDD7;" />
             <br>
             <div>
-                <input class="innerBtn" id="innerBtn" type="button" value="Start Log-Parsing" onclick="call_PyScript()">
+                <input class="innerBtn" id="innerBtn" type="button" value="Start Parsing" onclick="call_PyScript()">
                 <!-- <br>
                 <br> -->
                 <br>
@@ -149,14 +223,87 @@
             <br>
 
 
-        <!------------- INFORMATION BOX FOR RESPONSES AND ERRORS -------------->
-        <hr style="border: 0.5px solid#becdd7;" />
-        <div>
-            <br>
-            <h4 id="hdr"> <label for="results">Information: </label> </h4>
-            <textarea id="results" class="results" disabled name="results" rows="6" cols="100"></textarea>
-        </div>
+        <!-------------------------- TRYING TO SEPARATE INFO INTO TABS --------------------------->
+            <h2>Tabs</h2>
+            <p>Click on the buttons inside the tabbed menu:</p>
+            
+            <div class="tab">
+              <button class="tablinks" onclick="openTab(event, 'test_summary')">Summary</button>
+              <button class="tablinks" onclick="openTab(event, 'test_results')">Test Results</button>
+              <button class="tablinks" onclick="openTab(event, 'test_json')">Output JSON</button>
+              <button class="tablinks" onclick="openTab(event, 'test_log')">Original Log</button>
+            </div>
+            
+            <div id="test_summary" class="tabcontent">
+              <h3>Summary of the results for each test in the log(s): </h3>
+              <textarea class="contents" id="summary_contents" disabled rows="30" cols="100"> Click "Start Parsing" to display results" </textarea>
+            </div>
+            
+            <div id="test_results" class="tabcontent">
+              <h3>All results outputted to Python Console: </h3>
+              <textarea class="contents" id="results_contents" disabled rows="30" cols="100"> Click "Start Parsing" to display results" </textarea>
+            </div>
+            
+            <div id="test_json" class="tabcontent">
+              <h3>All test results in JSON format with pass/fail status:</h3>
+              <textarea class="contents" id="json_contents" disabled rows="30" cols="100"> Click "Start Parsing" to display results" </textarea>
+            </div>
+
+            <div id="test_log" class="tabcontent">
+                <h3>Unaltered output from the original log(s):</h3>
+                <textarea class="contents" id="log_contents" disabled rows="30" cols="100"> Select a file above to view its contents here </textarea>
+              </div>
+  
+            <!-- <script>
+                var fs = require('fs');
+
+                function openTab(evt, tab) {
+                  var i, tabcontent, tablinks;
+                  tabcontent = document.getElementsByClassName("tabcontent");
+                  for (i = 0; i < tabcontent.length; i++) {
+                    tabcontent[i].style.display = "none";
+                  }
+                  tablinks = document.getElementsByClassName("tablinks");
+                  for (i = 0; i < tablinks.length; i++) {
+                    tablinks[i].className = tablinks[i].className.replace(" active", "");
+                    }
+                  document.getElementById(tab).style.display = "block";
+                  evt.currentTarget.className += " active";
+
+                  if (tab=="test_log"){
+                    if (file!=""){
+                        fs.readFile(file[0], 'utf8', function(err, data) {
+                            if (err) throw err;
+                            console.log(data);
+                            document.getElementById("log_contents").innerHTML = data;
+                        });                    
+                    }
+                  }
+
+
+                }
+                </script> -->
         <!--------------------------------------------------------------------->
+
+
+        <!------------- INFORMATION BOX FOR RESPONSES AND ERRORS -------------->
+        <!-- <hr style="border: 0.5px solid#becdd7;" />
+        <div>
+            <h4 id="hdr"> <label for="results">Results Summary: </label> </h4>
+            <textarea disabled id="results" class="results" name="results" rows="20" cols="100"></textarea>
+        </div> -->
+        <!--------------------------------------------------------------------->
+
+
+        <!------------- INFORMATION BOX FOR DETAILED JSON OUTPUT -------------->
+        <!-- <hr style="border: 0.5px solid#becdd7;" />
+        <div>
+            <h4 id="hdr"> <label for="json_results">Detailed JSON Results: </label> </h4>
+            <textarea disabled id="json_results" class="json_results" name="json_results" rows="20" cols="100"></textarea>
+        </div> -->
+        <!--------------------------------------------------------------------->
+
+
     </div> <!-- end container div of whole app -->
 </body>
 </html>
