@@ -33,11 +33,13 @@ neg = ["failed", "faulted", "fault", "autoretry", "bad", "panic"]
 
 #---------------------------------------------------------------------------
 def fix_name(name):
-    """ Standardizes file/directory names so there are no spaces in them, reducing likelihood of errors when parsing. """
-    if ' ' in name:
-        new_name = name.replace(' ', '_')
-        os.rename(r'{}'.format(name), r'{}'.format(new_name))
-        name = new_name
+    """ Standardizes file/directory names so there are no spaces in them, reducing likelihood of errors when parsing or calling scripts. """
+    # TK - ask Sesha about renaming files before I go ahead and do that.
+
+    # if ' ' in name:
+    #     new_name = name.replace(' ', '_')
+    #     os.rename(r'{}'.format(name), r'{}'.format(new_name))
+    #     name = new_name
     return name
 
 
@@ -196,10 +198,14 @@ def get_file_tree():
     file_tests = {}
 
 
-    for root, dirs, files in os.walk("."): 
+    for root, dirs, files in os.walk("./parsing_folder"): 
+        # print("ROOT: ", root)
+        # print("DIRS: ", dirs)
+        # print("FILES: ", files)
+
         # Not looking to parse the git directory, so skip it and skip blank dirs.
         # if (".git" in root) or (len(files) == 0): #tk - use this line to check all dirs
-        if (".git" in root) or (len(files) == 0) or "M0_logs" not in root:
+        if (".git" in root) or (len(files) == 0):
             continue
 
         root = fix_name(root)
@@ -230,7 +236,7 @@ def get_file_tree():
 
 
 #---------------------------------------------------------------------------
-def dict_to_JSON(a_dict):
+def dict_to_JSON(a_dict, print_or_output):
     """Takes a dict, sorts it and formats it like a JSON. Then, it prints it out in the console and sends the same
     result to a new JSON file in the directory that this tool is run, unless --noJSON is specified as an argument."""
     # print("-------------------------------------------------------------------------")
@@ -245,13 +251,16 @@ def dict_to_JSON(a_dict):
     # print("-------------------------------------------------------------------------")
 
     formatted_json_log_results = json.dumps(a_dict, indent = 8, sort_keys=True)
-    # print(formatted_json_log_results) #tk use this to print json to console
 
-    # if includeJSON:
+    # use this to print json to console
+    if print_or_output == "print":
+        print(formatted_json_log_results) 
+    
     # Write results to a JSON file
-    log_results = open("log_results.json", "w+")
-    log_results.write(formatted_json_log_results)
-    log_results.close()
+    if print_or_output == "output":
+        log_results = open("./parsing_folder/log_results.json", "w+")
+        log_results.write(formatted_json_log_results)
+        log_results.close()
 
     # Write results to a txt file with JSON styling
     # log_results = open("log_results.txt", "w+")
@@ -263,51 +272,24 @@ def dict_to_JSON(a_dict):
 def main():
     args_list = sys.argv
     file_id = ""
-    print(len(args_list))
-
-    if len(args_list)==1:
-        # TK - NEED TO CHANGE THE GET_FILE_TREE function to work even if there are no directories.
-        #       The current setup when running without selecting a file in the app just prints the "log result" line
-        #       but likely does not identify or store the files in the current directory to parse.
-        tree = get_file_tree()
-        dict_to_JSON(tree)
-
-        sharp_print("LOG RESULTS: ")
-        for directory_id, files in tree.items():
-            print("directory_id: ", directory_id)
-
-            for file in files:
-
-                for file_id, contents in file.items():
-                    print("\tfile_id: ", file_id)
-                    # print(contents)
-                    # print(contents.items())
-
-                    for test, info in contents.items():
-                        print("\t\t", test, end="")
-                        for test_status, test_details in info.items():
-                            #highlight failed tests
-                            if test_status!="passed":
-                                test_status = "[ " + test_status + " ]"
-                                print("   -----> ", test_status.upper())
-                                for i in test_details:
-                                    print("\t\t\t ", i)
-                                print("")
-                            else:
-                                print("   -----> ", test_status.upper())
+    # print(len(args_list))
+    tree = {}
 
 
-    else:
+    if (len(args_list)>=2 and args_list[1]!="json"):
         file_id = args_list[1]
-        # file_id = "E:\__WORK\Sesha_M0_Parser\LogParser_app\AC10A0402626200007"
         file = check_file_output(file_id)
+        tree[file_id] = file
+
         sharp_print("LOG RESULTS: \n" + file_id)
+
+        if len(args_list)==3:
+            if args_list[2]=="json":
+                dict_to_JSON(tree, "output")
+
         for test, contents in file.items():
             print("\t", test, end="")
             for status, info in contents.items():
-                # for test_status in info:
-                    # print(info.type())
-                    # #highlight failed tests
                 if status!="passed":
                     status = "[ " + status + " ]"
                     print("   -----> ", status.upper())
@@ -316,6 +298,44 @@ def main():
                     print("")
                 else:
                     print("   -----> ", status.upper())
+
+
+    elif (len(args_list)>=1):
+        tree = get_file_tree()
+        # output the results to a json if specified in args
+        if (len(args_list)>1 and args_list[1]=="json"):
+            dict_to_JSON(tree, "output")
+
+        sharp_print("LOG RESULTS SUMMARY: ")
+        for directory_id, files in tree.items():
+            print("directory_id: ", directory_id)
+
+            for file in files:
+
+                for file_id, contents in file.items():
+                    print("\tfile_id: ", file_id) 
+
+                    for test, info in contents.items():
+                        print("\t\t", test, end="")
+                        
+                        for test_status, test_details in info.items():
+                            #highlight failed tests
+                            if test_status!="passed":
+                                test_status = "[ " + test_status + " ]"
+                                print("   -----> ", test_status.upper())
+                                
+                                for i in test_details:
+                                    print("\t\t\t ", i)
+                                print("")
+
+                            else:
+                                print("   -----> ", test_status.upper())
+        return 
+
+
+    
+    else:
+        print("Python Script Error: Didn't catch something...")
 
 
 
