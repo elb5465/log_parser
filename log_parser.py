@@ -236,7 +236,8 @@ def get_file_tree():
 
 
 #---------------------------------------------------------------------------
-def dict_to_JSON(a_dict, print_or_output):
+def dict_to_JSON(a_dict, print_or_output, path):
+# def dict_to_JSON(a_dict, print_or_output):
     """Takes a dict, sorts it and formats it like a JSON. Then, it prints it out in the console and sends the same
     result to a new JSON file in the directory that this tool is run, unless --noJSON is specified as an argument."""
     # print("-------------------------------------------------------------------------")
@@ -254,13 +255,17 @@ def dict_to_JSON(a_dict, print_or_output):
 
     # use this to print json to console
     if print_or_output == "print":
-        print(formatted_json_log_results) 
+        # print(formatted_json_log_results) 
+        pass
     
     # Write results to a JSON file
     if print_or_output == "output":
-        log_results = open("./parsing_folder/log_results.json", "w+")
-        log_results.write(formatted_json_log_results)
-        log_results.close()
+        # log_results = open("./parsing_folder/log_results.json", "w+") 
+        json_results = open(path, "w+") 
+        # tk trying to get file selected to save in node js and pass path here to export json whereever user wants
+        # log_results = open(path, "w+")
+        json_results.write(formatted_json_log_results)
+        json_results.close()
 
     # Write results to a txt file with JSON styling
     # log_results = open("log_results.txt", "w+")
@@ -272,41 +277,49 @@ def dict_to_JSON(a_dict, print_or_output):
 def main():
     args_list = sys.argv
     file_id = ""
-    # print(len(args_list))
+    print(len(args_list))
+    print(args_list)
     tree = {}
 
-
-    if (len(args_list)>=2 and args_list[1]!="json"):
+    # if running script on a specified file WITHOUT JSON
+    # if (len(args_list)==2 and args_list[1]!="json"):
+    if (len(args_list)>=2):
         file_id = args_list[1]
         file = check_file_output(file_id)
         tree[file_id] = file
 
-        sharp_print("LOG RESULTS: \n" + file_id)
+        if ("json" in args_list) and len(args_list)==4:
+            path = args_list[3]
+            dict_to_JSON(tree, "output", path)
 
-        if len(args_list)==3:
-            if args_list[2]=="json":
-                dict_to_JSON(tree, "output")
+        print("$$__SUMMARY__$$")
+        sharp_print("FILE: \n" + file_id)
 
         for test, contents in file.items():
-            print("\t", test, end="")
+            print(test, end="")
             for status, info in contents.items():
                 if status!="passed":
-                    status = "[ " + status + " ]"
+                    status = "** " + status + " **"
                     print("   -----> ", status.upper())
                     for i in info:
-                        print("\t\t\t ", i)
-                    print("")
+                        print("\'\t\'", i)
+                    print("\n")
                 else:
                     print("   -----> ", status.upper())
 
+    elif (len(args_list)>=2) and ("json" in args_list):
+        print("hello")
+        
 
-    elif (len(args_list)>=1):
+
+    # elif running script on no particular file with or without JSON
+    elif (len(args_list)<=2):
+        print("h\n\n\n\nh\nh\nh\nh\nh\nh\nh\nh\n")
         tree = get_file_tree()
-        # output the results to a json if specified in args
-        if (len(args_list)>1 and args_list[1]=="json"):
-            dict_to_JSON(tree, "output")
 
-        sharp_print("LOG RESULTS SUMMARY: ")
+        #use this format to break up the chunks received by node.js
+        print("$$__SUMMARY__$$")
+        sharp_print("ALL FILES SUMMARY: ")
         for directory_id, files in tree.items():
             print("directory_id: ", directory_id)
 
@@ -321,18 +334,15 @@ def main():
                         for test_status, test_details in info.items():
                             #highlight failed tests
                             if test_status!="passed":
-                                test_status = "[ " + test_status + " ]"
+                                test_status = "** " + test_status + " **"
                                 print("   -----> ", test_status.upper())
                                 
                                 for i in test_details:
-                                    print("\t\t\t ", i)
-                                print("")
+                                    print("\'\t\'", i)
+                                print("\n")
 
                             else:
                                 print("   -----> ", test_status.upper())
-        return 
-
-
     
     else:
         print("Python Script Error: Didn't catch something...")
